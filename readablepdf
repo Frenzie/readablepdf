@@ -1,0 +1,153 @@
+#!/bin/bash
+# readablepdf
+# ReadablePDF streamlines the effort of turning a not so great PDF into
+# a more easily readable PDF (or of course a pretty decent PDF into an
+# even better one). This script depends on poppler-utils, imagemagick,
+# scantailor, tesseract-ocr, jbic2enc, and pdfbeads.
+#
+# Unfortunately only the first four are available in the Debian repositories.
+# sudo apt install poppler-utils imagemagick scantailor tesseract-ocr
+#
+# For more background information and how to install jbig2enc and pdfbeads,
+# see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#harder-post-processing
+#
+# GNU Aspell and GNU Parallel are recommended but not required.
+# sudo apt install aspell parallel
+#
+# Aspell dictionaries tend to be called things like aspell-en, aspell-nl, etc.
+
+BASENAME=${@%.pdf} # or `basename "@%" .pdf`
+
+# It would seem that at some point in its internal processing, pdfbeads has issues with spaces.
+# Let's strip them and perhaps some other special characters so as still to provide
+# meaningful working directory and file names.
+BASENAME_SAFE=$(echo "${BASENAME}" | tr ' ' '_') # Replace all spaces with underscores.
+#BASENAME_SAFE=$(echo "${BASENAME_SAFE}" | tr -cd 'A-Za-z0-9_-') # Strip other potentially harmful chars just in case?
+
+SCRIPTNAME=$(basename "$0" .sh)
+TMP_DIR=${SCRIPTNAME}-${BASENAME_SAFE}
+
+TESSERACT_PARAMS="-l eng+nld"
+
+
+# If project file exists, change directory and assume everything's in order.
+# Else do the preprocessing and initiation of a new project.
+if [ -f "${TMP_DIR}/${BASENAME_SAFE}.ScanTailor" ]; then
+	echo "File ${TMP_DIR}/${BASENAME_SAFE}.ScanTailor exists."
+	cd "${TMP_DIR}"
+else
+	echo "File ${TMP_DIR}/${BASENAME_SAFE}.ScanTailor does not exist."
+	
+	# Let's get started.
+	mkdir "${TMP_DIR}"
+	cd "${TMP_DIR}"
+	
+	# Only output PNG to prevent any potential further quality loss.
+	pdfimages -png "../${BASENAME}.pdf" "${BASENAME_SAFE}"
+	
+	# This is basically what happens in https://github.com/virantha/pypdfocr as well
+	# get the x-dpi; no logic for different X and Y DPI or different DPI within PDF file
+	# y-dpi would be pdfimages -list out.pdf | sed -n 3p | awk '{print $14}'
+	DPI=$(pdfimages -list "../${BASENAME}.pdf" | sed -n 3p | awk '{print $13}')
+	
+#<<'end_long_comment'
+	# TODO Skip all this based on a rotation command-line flag!
+	# Adapted from http://stackoverflow.com/a/9778277
+	# Scan Tailor says it can't automatically figure out the rotation.
+	# I'm not a programmer, but I think I can do well enough by (ab)using OCR. :)
+	file="${BASENAME_SAFE}-000.png"
+	
+	TMP="/tmp/rotation-calc"
+	mkdir ${TMP}
+
+	# Make copies in all four orientations (the src file is 0; copy it to make 
+	# things less confusing)
+	north_file="${TMP}/0"
+	east_file="${TMP}/90"
+	south_file="${TMP}/180"
+	west_file="${TMP}/270"
+
+	cp "$file" "$north_file"
+	convert -rotate 90 "$file" "$east_file"
+	convert -rotate 180 "$file" "$south_file"
+	convert -rotate 270 "$file" "$west_file"
+
+	# OCR each (just append ".txt" to the path/name of the image)
+	north_text="$north_file.txt"
+	east_text="$east_file.txt"
+	south_text="$south_file.txt"
+	west_text="$west_file.txt"
+
+	# tesseract appends .txt automatically
+	tesseract "$north_file" "$north_file"
+	tesseract "$east_file" "$east_file"
+	tesseract "$south_file" "$south_file"
+	tesseract "$west_file" "$west_file"
+
+	# Get the word count for each txt file (least 'words' == least whitespace junk
+	# resulting from vertical lines of text that should be horizontal.)
+	wc_table="$TMP/wc_table"
+	echo "$(wc -w ${north_text}) ${north_file}" > $wc_table
+	echo "$(wc -w ${east_text}) ${east_file}" >> $wc_table
+	echo "$(wc -w ${south_text}) ${south_file}" >> $wc_table
+	echo "$(wc -w ${west_text}) ${west_file}" >> $wc_table
+
+	# Spellcheck. The lowest number of misspelled words is most likely the 
+	# correct orientation.
+	misspelled_words_table="$TMP/misspelled_words_table"
+	while read record; do
+		txt=$(echo "$record" | awk '{ print $2 }')
+		# This is harder to automate away, pretend we only deal with English and Dutch for now.
+		misspelled_word_count=$(< "${txt}" aspell -l en list | aspell -l nl list | wc -w)
+		echo "$misspelled_word_count $record" >> $misspelled_words_table
+	done < $wc_table
+
+	# Do the sort, overwrite the input file, save out the text
+	winner=$(sort -n $misspelled_words_table | head -1)
+	rotated_file=$(echo "${winner}" | awk '{ print $4 }')
+	
+	rotation=$(basename "${rotated_file}")
+	
+	echo "Rotating ${rotation} degrees"
+
+	# Clean up.
+	if [ -d ${TMP} ]; then
+		rm -r ${TMP}
+	fi
+	# TODO end skip
+	
+	if [[ ${rotation} -ne 0 ]]; then
+		mogrify -rotate "${rotation}" "${BASENAME_SAFE}-*.png"
+	fi
+#end_long_comment
+	
+	# consider --color-mode=mixed --despeckle=cautious
+	scantailor-cli --dpi="${DPI}" --margins=5 --output-project="${BASENAME_SAFE}.ScanTailor" ./*.png ./
+fi
+
+while true; do
+	read -p "Please ensure automated detection proceeded correctly by opening the project file ${TMP_DIR}/${BASENAME_SAFE}.ScanTailor in Scan Tailor. Enter [Y] to continue now and [N] to abort. If you restart the script, it'll continue from this point unless you delete the directory ${TMP_DIR}. " yn
+	case $yn in
+		[Yy]* ) break;;
+		[Nn]* ) exit;;
+		* ) echo "Please answer yes or no.";;
+	esac
+done
+
+# Use GNU Parallel to speed things up if it exists.
+if command -v parallel >/dev/null; then
+	parallel tesseract {} {.} ${TESSERACT_PARAMS} hocr ::: *.tif
+else
+	for i in ./*.tif; do tesseract $i $(basename $i) ${TESSERACT_PARAMS} hocr; done;
+fi
+
+# pdfbeads doesn't play nice with filenames with spaces. There's nothing we can do
+# about that here, but that's ${BASENAME_SAFE} is generated up at the beginning.
+# 
+# Also pdfbeads ./*.tif > "${BASENAME_SAFE}.pdf" doesn't work,
+# so you're in trouble if your PDF's name starts with "-".
+# See http://www.dwheeler.com/essays/filenames-in-shell.html#prefixglobs
+pdfbeads *.tif > "${BASENAME_SAFE}.pdf"
+
+#OUTPUT_BASENAME=${BASENAME}-output@DPI${DPI}
+mv "${BASENAME_SAFE}.pdf" ../"${BASENAME}-readable.pdf"
