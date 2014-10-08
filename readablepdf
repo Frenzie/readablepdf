@@ -22,7 +22,7 @@ BASENAME=${@%.pdf} # or `basename "@%" .pdf`
 # Let's strip them and perhaps some other special characters so as still to provide
 # meaningful working directory and file names.
 BASENAME_SAFE=$(echo "${BASENAME}" | tr ' ' '_') # Replace all spaces with underscores.
-BASENAME_SAFE=$(echo "${BASENAME}" | tr -d ".()\"'") # Get rid of all periods, parentheses, double quotes and single quotes.
+BASENAME_SAFE=$(echo "${BASENAME_SAFE}" | tr -d ".()\"'") # Get rid of all periods, parentheses, double quotes and single quotes.
 #BASENAME_SAFE=$(echo "${BASENAME_SAFE}" | tr -cd 'A-Za-z0-9_-') # Strip other potentially harmful chars just in case?
 
 SCRIPTNAME=$(basename "$0" .sh)
