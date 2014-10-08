@@ -59,7 +59,7 @@ else
 	# I'm not a programmer, but I think I can do well enough by (ab)using OCR. :)
 	file="${BASENAME_SAFE}-000.png"
 	
-	TMP="/tmp/rotation-calc"
+	TMP="/tmp/${TMP_DIR}-rotation-calc"
 	mkdir ${TMP}
 
 	# Make copies in all four orientations (the src file is 0; copy it to make 
