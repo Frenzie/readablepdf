@@ -112,14 +112,14 @@ TESSERACT_PARAMS=
 # Inspired by http://wiki.bash-hackers.org/howto/conffile
 # Both system-wide and per user conf; something along these lines.
 load_config() {
-# Paranoid whitelist.
-unknown=$(< "$1" grep -Evi "^(#.*|[A-Z_]*='[a-z0-9 +-]*')$")
-if [ -n "${unknown}" ]; then
- echo "Error in config file. Disallowed lines:"
- echo "${unknown}"
- exit 1
-fi
-source "$1"
+	# Paranoid whitelist.
+	unknown=$(< "$1" grep -Evi "^(#.*|[A-Z_]*='[a-z0-9 +-]*')$")
+	if [ -n "${unknown}" ]; then
+		echo "Error in config file. Disallowed lines:"
+		echo "${unknown}"
+		exit 1
+	fi
+	source "$1"
 }
 
 c_files=( "/etc/readablepdf.cfg" "${HOME}/.config/readablepdf.conf" )
