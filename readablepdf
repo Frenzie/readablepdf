@@ -250,7 +250,7 @@ TMP_DIR=${SCRIPTNAME}-${BASENAME_SAFE}
 # Else do the preprocessing and initiation of a new project.
 if [ -f "${TMP_DIR}/${BASENAME_SAFE}.ScanTailor" ]; then
 	echo "File ${TMP_DIR}/${BASENAME_SAFE}.ScanTailor exists."
-	cd "${TMP_DIR}"
+	cd "${TMP_DIR}" || exit
 else
 	echo "File ${TMP_DIR}/${BASENAME_SAFE}.ScanTailor does not exist."
 	
@@ -258,7 +258,7 @@ else
 	if [ ! -d "${TMP_DIR}" ]; then
 		mkdir "${TMP_DIR}"
 	fi
-	cd "${TMP_DIR}"
+	cd "${TMP_DIR}" || exit
 	
 	# Only output PNG to prevent any potential further quality loss.
 	pdfimages -png "../${BASENAME}.pdf" "${BASENAME_SAFE}"
@@ -306,10 +306,10 @@ else
 		# Get the word count for each txt file (least 'words' == least whitespace junk
 		# resulting from vertical lines of text that should be horizontal.)
 		wc_table="$TMP/wc_table"
-		echo "$(wc -w ${north_text}) ${north_file}" > $wc_table
-		echo "$(wc -w ${east_text}) ${east_file}" >> $wc_table
-		echo "$(wc -w ${south_text}) ${south_file}" >> $wc_table
-		echo "$(wc -w ${west_text}) ${west_file}" >> $wc_table
+		echo "$(wc -w "${north_text}") ${north_file}" > "$wc_table"
+		echo "$(wc -w "${east_text}") ${east_file}" >> "$wc_table"
+		echo "$(wc -w "${south_text}") ${south_file}" >> "$wc_table"
+		echo "$(wc -w "${west_text}") ${west_file}" >> "$wc_table"
 
 		# Spellcheck. The lowest number of misspelled words is most likely the 
 		# correct orientation.
@@ -318,11 +318,11 @@ else
 			txt=$(echo "$record" | awk '{ print $2 }')
 			# This is harder to automate away, pretend we only deal with English and Dutch for now.
 			misspelled_word_count=$(< "${txt}" aspell -l en list | aspell -l nl list | wc -w)
-			echo "$misspelled_word_count $record" >> $misspelled_words_table
-		done < $wc_table
+			echo "$misspelled_word_count $record" >> "$misspelled_words_table"
+		done < "$wc_table"
 
 		# Do the sort, overwrite the input file, save out the text
-		winner=$(sort -n $misspelled_words_table | head -1)
+		winner=$(sort -n "$misspelled_words_table" | head -1)
 		rotated_file=$(echo "${winner}" | awk '{ print $4 }')
 
 		ROTATE=$(basename "${rotated_file}")
