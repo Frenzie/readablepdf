@@ -12,13 +12,15 @@
 #
 ##############################################
 #
-# This script depends on poppler-utils, imagemagick, scantailor,
-# tesseract-ocr, jbig2enc, and pdfbeads. Unfortunately only the first four
+# This script depends on poppler-utils, imagemagick, tesseract-ocr,
+# scantailor-universal, jbig2enc, and pdfbeads. Unfortunately only the first three
 # are available in the Debian repositories.
-# sudo apt install poppler-utils imagemagick scantailor tesseract-ocr
+# sudo apt install poppler-utils imagemagick tesseract-ocr
 #
 # For more background information and how to install jbig2enc and pdfbeads,
 # see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#harder-post-processing
+# Scan-Tailor Universal must be compiled from source, see:
+# https://github.com/trufanov-nok/scantailor-universal
 #
 # GNU Aspell and GNU Parallel are recommended but not required.
 # sudo apt install aspell parallel
@@ -36,13 +38,15 @@ the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.'
 
 ## Helper functions and variables for command line switches.
-dependencies=$'This script depends on poppler-utils, imagemagick, scantailor-universal,
-tesseract-ocr, jbig2enc, and pdfbeads (+ its dependencies ruby-nokogiri and ruby-inconv). Unfortunately only the first four
+dependencies=$'This script depends on poppler-utils, imagemagick, tesseract-ocr, 
+scantailor-universal, jbig2enc, and pdfbeads (+ its dependencies ruby-nokogiri and ruby-inconv). Unfortunately only the first three
 are available in the Debian repositories.
-sudo apt install poppler-utils imagemagick scantailor tesseract-ocr
+sudo apt install poppler-utils imagemagick tesseract-ocr
 
 For more background information and how to install jbig2enc and pdfbeads,
 see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#harder-post-processing
+Scan-Tailor Universal must be compiled from source, see:
+https://github.com/trufanov-nok/scantailor-universal
 
 GNU Aspell and GNU Parallel are recommended but not required.
 sudo apt install aspell parallel
