@@ -22,8 +22,8 @@
 # Scan-Tailor Universal must be compiled from source, see:
 # https://github.com/trufanov-nok/scantailor-universal
 #
-# GNU Aspell and GNU Parallel are recommended but not required.
-# sudo apt install aspell parallel
+# GNU Aspell is recommended but not required.
+# sudo apt install aspell
 #
 # Aspell dictionaries tend to be called things like aspell-en, aspell-nl, etc.
 
@@ -48,8 +48,8 @@ see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#hard
 Scan-Tailor Universal must be compiled from source, see:
 https://github.com/trufanov-nok/scantailor-universal
 
-GNU Aspell and GNU Parallel are recommended but not required.
-sudo apt install aspell parallel
+GNU Aspell is recommended but not required.
+sudo apt install aspell
 
 Aspell dictionaries tend to be called things like aspell-en, aspell-nl, etc.'
 usage="Usage: $0 [-a] [-r <0|90|180|270>] [FILE.pdf]"
@@ -358,12 +358,9 @@ while true; do
 	esac
 done
 
-# Use GNU Parallel to speed things up if it exists.
-if command -v parallel >/dev/null; then
-	parallel tesseract "{}" "{.}" "${TESSERACT_PARAMS}" hocr ::: *.tif
-else
-	for i in ./*.tif; do tesseract "$i" "$(basename "$i")" "${TESSERACT_PARAMS}" hocr; done;
-fi
+# Process every tif-file with tesseract.
+for i in ./*.tif; do tesseract "$i" "$(basename "$i")" "${TESSERACT_PARAMS}" hocr; done;
+
 
 # pdfbeads doesn't play nice with filenames with spaces. There's nothing we can do
 # about that here, but that's ${BASENAME_SAFE} is generated up at the beginning.
