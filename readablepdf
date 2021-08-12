@@ -358,8 +358,20 @@ while true; do
 	esac
 done
 
-# Process every tif-file with tesseract.
-for i in ./*.tif; do tesseract "$i" "$(basename "$i")" "${TESSERACT_PARAMS}" hocr; done;
+
+echo "Estimating CPU-Threads"
+# Estimate CPU Cores (see pdfsandwich code for reference)
+CPU_THREADS=$(cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}')
+export OMP_THREAD_LIMIT=$CPU_THREADS
+
+echo "Using up to $CPU_THREADS threads."
+echo "Running tesseract-ocr"
+
+# if command -v parallel >/dev/null; then
+#	parallel tesseract "{}" "{.}" "${TESSERACT_PARAMS}" hocr ::: *.tif
+# else
+for i in ./*.tif; do tesseract $i $(basename "$i") ${TESSERACT_PARAMS} hocr; done;
+# fi
 
 
 # pdfbeads doesn't play nice with filenames with spaces. There's nothing we can do
