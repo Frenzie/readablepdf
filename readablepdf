@@ -372,7 +372,7 @@ echo "Using up to $CPU_THREADS threads."
 
 if command -v parallel >/dev/null; then
 	parallel -P ${MAX_JOBS} tesseract "{}" "{.}" "${TESSERACT_PARAMS}" hocr ::: *.tif
- else
+else
 	for i in ./*.tif; do tesseract $i $(basename "$i") ${TESSERACT_PARAMS} hocr; done;
 fi
 
