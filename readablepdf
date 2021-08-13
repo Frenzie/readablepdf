@@ -376,8 +376,6 @@ else
 	for i in ./*.tif; do tesseract $i $(basename "$i") ${TESSERACT_PARAMS} hocr; done;
 fi
 
-
-
 # pdfbeads doesn't play nice with filenames with spaces. There's nothing we can do
 # about that here, but that's ${BASENAME_SAFE} is generated up at the beginning.
 # 
