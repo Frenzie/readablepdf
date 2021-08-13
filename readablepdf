@@ -22,8 +22,8 @@
 # Scan-Tailor Universal must be compiled from source, see:
 # https://github.com/trufanov-nok/scantailor-universal
 #
-# GNU Aspell is recommended but not required.
-# sudo apt install aspell
+# GNU Aspell and GNU Parallel are recommended but not required.
+# sudo apt install aspell parallel
 #
 # Aspell dictionaries tend to be called things like aspell-en, aspell-nl, etc.
 
@@ -48,8 +48,8 @@ see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#hard
 Scan-Tailor Universal must be compiled from source, see:
 https://github.com/trufanov-nok/scantailor-universal
 
-GNU Aspell is recommended but not required.
-sudo apt install aspell
+GNU Aspell and GNU Parallel are recommended but not required.
+sudo apt install aspell parallel
 
 Aspell dictionaries tend to be called things like aspell-en, aspell-nl, etc.'
 usage="Usage: $0 [-a] [-r <0|90|180|270>] [FILE.pdf]"
@@ -368,12 +368,12 @@ MAX_JOBS=$(expr $CPU_THREADS / 4)
 
 echo "Using up to $CPU_THREADS threads."
 
-# command -v foo >/dev/null 2>&1 || { echo >&2 "I require foo but it's not installed.  Aborting."; exit 1; }
+# Use GNU Parallel to speed things up if it exists.
 
 if command -v parallel >/dev/null; then
 	parallel -P ${MAX_JOBS} tesseract "{}" "{.}" "${TESSERACT_PARAMS}" hocr ::: *.tif
  else
-	 for i in ./*.tif; do tesseract $i $(basename "$i") ${TESSERACT_PARAMS} hocr; done;
+	for i in ./*.tif; do tesseract $i $(basename "$i") ${TESSERACT_PARAMS} hocr; done;
 fi
 
 
