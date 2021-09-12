@@ -12,13 +12,15 @@
 #
 ##############################################
 #
-# This script depends on poppler-utils, imagemagick, scantailor,
-# tesseract-ocr, jbic2enc, and pdfbeads. Unfortunately only the first four
+# This script depends on poppler-utils, imagemagick, tesseract-ocr,
+# scantailor-universal, jbig2enc, and pdfbeads. Unfortunately only the first three
 # are available in the Debian repositories.
-# sudo apt install poppler-utils imagemagick scantailor tesseract-ocr
+# sudo apt install poppler-utils imagemagick tesseract-ocr
 #
 # For more background information and how to install jbig2enc and pdfbeads,
 # see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#harder-post-processing
+# Scan-Tailor Universal must be compiled from source, see:
+# https://github.com/trufanov-nok/scantailor-universal
 #
 # GNU Aspell and GNU Parallel are recommended but not required.
 # sudo apt install aspell parallel
@@ -36,13 +38,15 @@ the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.'
 
 ## Helper functions and variables for command line switches.
-dependencies=$'This script depends on poppler-utils, imagemagick, scantailor,
-tesseract-ocr, jbic2enc, and pdfbeads. Unfortunately only the first four
+dependencies=$'This script depends on poppler-utils, imagemagick, tesseract-ocr, 
+scantailor-universal, jbig2enc, and pdfbeads (+ its dependencies ruby-nokogiri and ruby-inconv). Unfortunately only the first three
 are available in the Debian repositories.
-sudo apt install poppler-utils imagemagick scantailor tesseract-ocr
+sudo apt install poppler-utils imagemagick tesseract-ocr
 
 For more background information and how to install jbig2enc and pdfbeads,
 see http://fransdejonge.com/2014/10/fixing-up-scanned-pdfs-with-scan-tailor#harder-post-processing
+Scan-Tailor Universal must be compiled from source, see:
+https://github.com/trufanov-nok/scantailor-universal
 
 GNU Aspell and GNU Parallel are recommended but not required.
 sudo apt install aspell parallel
@@ -342,7 +346,7 @@ else
 #end_long_comment
 	
 	# consider --color-mode=mixed --despeckle=cautious
-	scantailor-cli --dpi="${DPI}" --margins=5 --output-project="${BASENAME_SAFE}.ScanTailor" ./*.png ./
+	scantailor-universal-cli --dpi="${DPI}" --margins=5 --output-project="${BASENAME_SAFE}.ScanTailor" ./*.png ./
 fi
 
 while true; do
@@ -354,9 +358,20 @@ while true; do
 	esac
 done
 
+
+echo "Estimating CPU-Threads"
+# Estimate CPU Cores (see pdfsandwich code for reference)
+CPU_THREADS=$(cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}')
+OMP_THREAD_LIMIT=$CPU_THREADS
+MAX_JOBS=$(expr $CPU_THREADS / 4)
+# tesseract only uses 4 threads
+
+echo "Using up to $CPU_THREADS threads."
+
 # Use GNU Parallel to speed things up if it exists.
+
 if command -v parallel >/dev/null; then
-	parallel tesseract "{}" "{.}" "${TESSERACT_PARAMS}" hocr ::: *.tif
+	parallel -P ${MAX_JOBS} tesseract "{}" "{.}" "${TESSERACT_PARAMS}" hocr ::: *.tif
 else
 	for i in ./*.tif; do tesseract "$i" "$(basename "$i")" "${TESSERACT_PARAMS}" hocr; done;
 fi
